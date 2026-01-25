@@ -5,11 +5,11 @@ const cors = require("cors");
 const rateLimit = require("express-rate-limit");
 const multer = require("multer");
 const dontenv = require("dotenv");
-const path = require("path");
-
-
 dontenv.config();
 const app = express();
+const setUpSwagger = require("./swagger");
+
+const path = require("path");
 
 app.use(helmet());
 app.use(express.json());
@@ -21,17 +21,11 @@ app.use(
   }),
 );
 
-app.use(express.static('uploads'));
+app.use(express.static("uploads"));
 connectDB();
 app.use("/api/projects", require("./routes/projects.routes"));
 app.use("/api/users", require("./routes/users.routes"));
 
-// like un projet
-// commenter un projet (= création d'un commentaire)
-// supprimer un projet
-// modifier un projet
-
-// inscription
-// connexion
+setUpSwagger(app);
 
 app.listen(5500, () => console.log("Server running"));

@@ -1,5 +1,6 @@
 const { default: mongoose } = require("mongoose");
 const Project = require("../models/project.model");
+const Comment = require("../models/comment.model");
 
 exports.getProjects = (req, res) => {
   //try {
@@ -15,13 +16,13 @@ exports.getProjects = (req, res) => {
   } */
 };
 
-exports.getProject = (req, res) => {
+exports.getProject = async (req, res) => {
   const id = req.params.id;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ error: "ID invalide" });
   }
-  const project = Project.findById(id).select("title description skills image");
+  const project = await Project.findById(id);
 
   if (!project) {
     return res.status(404).json({ error: "Projet non trouvé" });
@@ -50,5 +51,112 @@ exports.createProject = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Erreur lors de la création du projet" });
+  }
+};
+
+exports.updateProject = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, skills } = req.body;
+
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ error: "Projet non trouvé" });
+    }
+
+    if (project.author.toString() !== req.user.userId) {
+      return res
+        .status(403)
+        .json({ error: "Accés refusé: vous n'êtes pas l'auteur" });
+    }
+    if (title) project.title = title;
+    if (description) project.description = description;
+    if (skills) project.skills = skills;
+    if (image) project.image = image;
+
+    const updatedProject = await Project.save(res.json(updatedProject));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur lors de la modification" });
+  }
+};
+
+exports.deleteProject = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const project = await Project.findById(id);
+
+    if (!project) {
+      return res.status(404).json({ error: "Projet non trouvé" });
+    }
+
+    if (project.author.toString() !== req.user.userId) {
+      return res
+        .status(403)
+        .json({ error: "Accés refusé: vous n'êtes pas l'auteur" });
+    }
+
+    await Project.deleteOne();
+    rex.json({ message: "Projet supprimé avec succès" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur lors de la suppression" });
+  }
+};
+
+exports.likeProject = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ error: "Projet non trouvé" });
+    }
+
+    const alreadyLiked = project.likes.includes(userId);
+    if (alreadyLiked) {
+      project.likes = project.likes.filter((uid) => uid.toString() !== userId);
+    } else {
+      project.likes.push(userId);
+    }
+
+    await project.save();
+    res.json({ likes: project.likes, liked: !alreadyLiked });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur lors du like" });
+  }
+};
+
+exports.commentProject = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+    const { content } = req.body;
+
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ error: "Projet non trouvé" });
+    }
+
+    if (!content) {
+      return res.status(400).json({ error: "Contenu obligatoire" });
+    }
+
+    const Comment = newComment({
+      content,
+      author: userId,
+      project: id,
+    });
+    const savedComment = await comment.save();
+
+    project.comments.push(savedComment._id);
+    await project.save();
+
+    res.status(201).json(savedComment);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur lors de l'ajout du commentaire" });
   }
 };
