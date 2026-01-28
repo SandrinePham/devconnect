@@ -2,13 +2,20 @@ const { default: mongoose } = require("mongoose");
 const Project = require("../models/project.model");
 const Comment = require("../models/comment.model");
 
-exports.getProjects = (req, res) => {
-  //try {
-  const projects = Project.find({}, "title description").sort({
-    createdAt: -1,
-  });
+exports.getProjects = async (req, res) => {
+  try {
+    const projects = await Project.find({}, "title description").sort({
+      createdAt: -1,
+    });
 
-  res.status(200).json(projects);
+    return res.status(200).json(projects);
+  } catch (error) {
+    console.error("GET PROJECTS ERROR:", error);
+    return res
+      .status(500)
+      .json({ message: "Erreur lors de la récupération des projets" });
+  }
+
   /* } catch (error) {
     res
       .status(500)
@@ -34,7 +41,7 @@ exports.getProject = async (req, res) => {
 exports.createProject = async (req, res) => {
   try {
     const { title, description, skills } = req.body;
-    const image = req.file.filename;
+    const image = req.file ? req.file.filename : null;
     if (!title) return res.status(400).json({ error: "Titre obligatoire" });
 
     const project = new Project({
@@ -74,7 +81,8 @@ exports.updateProject = async (req, res) => {
     if (skills) project.skills = skills;
     if (image) project.image = image;
 
-    const updatedProject = await Project.save(res.json(updatedProject));
+    const updatedProject = await project.save();
+    res.json(updatedProject);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Erreur lors de la modification" });
@@ -96,8 +104,8 @@ exports.deleteProject = async (req, res) => {
         .json({ error: "Accés refusé: vous n'êtes pas l'auteur" });
     }
 
-    await Project.deleteOne();
-    rex.json({ message: "Projet supprimé avec succès" });
+    await Project.deleteOne({ _id: id });
+    res.json({ message: "Projet supprimé avec succès" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Erreur lors de la suppression" });
@@ -144,7 +152,7 @@ exports.commentProject = async (req, res) => {
       return res.status(400).json({ error: "Contenu obligatoire" });
     }
 
-    const Comment = newComment({
+    const comment = new Comment({
       content,
       author: userId,
       project: id,

@@ -1,9 +1,13 @@
 const jwt = require("jsonwebtoken");
 
 const auth = (req, res, next) => {
-  const token = req.header("Authorization").split(" ")[1];
-  if (!token)
-    return res.status(401).json({ message: "Veuillez vous connecter" });
+  const authHeader = req.header("Authorization");
+
+  if (!authHeader) {
+    return res.status(401).json({ message: "Token manquant" });
+  }
+
+  const token = authHeader.split(" ")[1];
 
   try {
     const decodedUser = jwt.verify(token, process.env.JWT_SECRET);
